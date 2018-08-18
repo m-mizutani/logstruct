@@ -19,7 +19,7 @@ func NewModel() *Model {
 	m := Model{}
 	m.FormatMap = make(map[int][]*Format)
 	m.tokenizer = NewSimpleTokenizer()
-	m.Threshold = 0.65
+	m.Threshold = 0.7
 	return &m
 }
 
@@ -96,7 +96,7 @@ func (x *Model) Load(fpath string) (err error) {
 
 // Formats returns all format of the model
 func (x *Model) Formats() []*Format {
-	arr := make([]*Format, 0)
+	arr := []*Format{}
 	for _, formats := range x.FormatMap {
 		arr = append(arr, formats...)
 	}
