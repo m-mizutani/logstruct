@@ -1,6 +1,7 @@
 package logstruct_test
 
 import (
+	"io/ioutil"
 	"testing"
 
 	logstruct "github.com/m-mizutani/logstruct/lib"
@@ -37,4 +38,25 @@ func TestExportAndImport(t *testing.T) {
 	f, n := m2.InputLog("a X b Y z")
 	assert.NotNil(t, f)
 	assert.False(t, n)
+}
+
+func TestSaveAndLoad(t *testing.T) {
+	m := logstruct.NewModel()
+	m.InputLog("a b c d e")
+	m.InputLog("a x c y e")
+
+	tmp, err := ioutil.TempFile("", "")
+	require.NoError(t, err)
+	tpath := tmp.Name()
+	tmp.Close()
+
+	err = m.Save(tpath)
+	require.NoError(t, err)
+
+	m2 := logstruct.NewModel()
+	err = m2.Load(tpath)
+	require.NoError(t, err)
+
+	_, isNew := m2.InputLog("a M c S e")
+	require.False(t, isNew)
 }

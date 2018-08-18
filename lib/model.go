@@ -1,7 +1,9 @@
 package logstruct
 
 import (
+	"compress/gzip"
 	"encoding/json"
+	"io/ioutil"
 	"os"
 
 	"github.com/pkg/errors"
@@ -76,8 +78,12 @@ func (x *Model) Save(fpath string) error {
 	if err != nil {
 		return errors.Wrap(err, "Fail to create a model file")
 	}
+	defer fd.Close()
 
-	n, err := fd.Write(data)
+	gfd := gzip.NewWriter(fd)
+	defer gfd.Close()
+
+	n, err := gfd.Write(data)
 	if err != nil {
 		return errors.Wrap(err, "Fail to write data to a model file")
 	}
@@ -91,6 +97,27 @@ func (x *Model) Save(fpath string) error {
 
 // Load restores model from a file
 func (x *Model) Load(fpath string) (err error) {
+	fd, err := os.Open(fpath)
+	if err != nil {
+		return errors.Wrap(err, "Fail to open a model file")
+	}
+	defer fd.Close()
+
+	gfd, err := gzip.NewReader(fd)
+	if err != nil {
+		return errors.Wrap(err, "Fail to decode a model file")
+	}
+
+	data, err := ioutil.ReadAll(gfd)
+	if err != nil {
+		return errors.Wrap(err, "Fail to read model data")
+	}
+
+	err = x.Import(data)
+	if err != nil {
+		return errors.Wrap(err, "Fail to import a model")
+	}
+
 	return
 }
 
