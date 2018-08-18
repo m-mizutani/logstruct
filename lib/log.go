@@ -3,7 +3,7 @@ package logstruct
 // Token is a part of log message
 type Token struct {
 	Data   string `json:"d"`
-	Freeze bool   `json:"f"`
+	freeze bool
 }
 
 // Log is a log message
@@ -33,7 +33,7 @@ func (x *Token) Equals(t *Token) bool {
 // Clone creates a copy of original Token
 func (x *Token) Clone() *Token {
 	c := newToken(x.Data)
-	c.Freeze = x.Freeze
+	c.freeze = x.freeze
 	return c
 }
 

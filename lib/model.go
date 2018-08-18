@@ -2,6 +2,9 @@ package logstruct
 
 import (
 	"encoding/json"
+	"os"
+
+	"github.com/pkg/errors"
 )
 
 // Model is a main structure of logstruct
@@ -14,6 +17,7 @@ type Model struct {
 // NewModel is a constructor of Model
 func NewModel() *Model {
 	m := Model{}
+	m.FormatMap = make(map[int][]*Format)
 	m.tokenizer = NewSimpleTokenizer()
 	m.Threshold = 0.65
 	return &m
@@ -36,6 +40,9 @@ func (x *Model) InputLog(msg string) (matchedForamt *Format, newFormat bool) {
 	if matchedForamt == nil {
 		matchedForamt = NewFormat(log)
 		newFormat = true
+		if x.FormatMap[length] == nil {
+			x.FormatMap[length] = make([]*Format, 0)
+		}
 		x.FormatMap[length] = append(x.FormatMap[length], matchedForamt)
 	}
 
@@ -59,11 +66,39 @@ func (x *Model) Import(data []byte) error {
 }
 
 // Save stores model to a file
-func (x *Model) Save(fpath string) (err error) {
-	return
+func (x *Model) Save(fpath string) error {
+	data, err := x.Export()
+	if err != nil {
+		return err
+	}
+
+	fd, err := os.Create(fpath)
+	if err != nil {
+		return errors.Wrap(err, "Fail to create a model file")
+	}
+
+	n, err := fd.Write(data)
+	if err != nil {
+		return errors.Wrap(err, "Fail to write data to a model file")
+	}
+
+	if n != len(data) {
+		return errors.New("Invalid write size")
+	}
+
+	return nil
 }
 
 // Load restores model from a file
 func (x *Model) Load(fpath string) (err error) {
 	return
+}
+
+// Formats returns all format of the model
+func (x *Model) Formats() []*Format {
+	arr := make([]*Format, 0)
+	for _, formats := range x.FormatMap {
+		arr = append(arr, formats...)
+	}
+	return arr
 }

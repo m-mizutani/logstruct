@@ -111,7 +111,7 @@ func (x *SimpleTokenizer) Split(msg string) []*Token {
 
 	var res []*Token
 	for _, c := range chunks {
-		if c.Freeze {
+		if c.freeze {
 			res = append(res, c)
 		} else {
 			res = append(res, x.splitByDelimiter(c)...)
