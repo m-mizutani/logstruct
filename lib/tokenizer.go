@@ -53,7 +53,7 @@ func NewSimpleTokenizer() *SimpleTokenizer {
 	return s
 }
 
-// SetDelim is a function set charactors as delimiter
+// SetDelim is a function set characters as delimiter
 func (x *SimpleTokenizer) SetDelim(d string) {
 	x.delims = d
 }
