@@ -31,7 +31,7 @@ func readFile(m *logstruct.Model, fpath string) error {
 	for scanner.Scan() {
 		format, isNew := m.InputLog(scanner.Text())
 		if isNew {
-			log.Printf("New: %s\n", format)
+			fmt.Printf("New: %s\n", format)
 		}
 	}
 
