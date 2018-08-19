@@ -17,6 +17,7 @@ type options struct {
 	Threshold  float64 `short:"t" long:"threshold" default:"0.7"`
 	ImportFile string  `short:"i" long:"import"`
 	ExportFile string  `short:"e" long:"export"`
+	Dump       bool    `shosrt:"d" long:"dump-format"`
 }
 
 func readFile(m *logstruct.Model, fpath string) error {
@@ -28,7 +29,10 @@ func readFile(m *logstruct.Model, fpath string) error {
 
 	scanner := bufio.NewScanner(fd)
 	for scanner.Scan() {
-		m.InputLog(scanner.Text())
+		format, isNew := m.InputLog(scanner.Text())
+		if isNew {
+			log.Printf("New: %s\n", format)
+		}
 	}
 
 	return nil
@@ -67,8 +71,9 @@ func main() {
 		}
 	}
 
-	for idx, format := range m.Formats() {
-		fmt.Println(idx, ":", format)
+	if opts.Dump {
+		for idx, format := range m.Formats() {
+			fmt.Println(idx, ":", format)
+		}
 	}
-
 }
