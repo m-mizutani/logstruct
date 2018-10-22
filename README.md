@@ -3,3 +3,17 @@
 ## What is this
 
 `logstruct` parses and estimates log original format like a `printf` format argument from existing text log data.
+
+## Getting Started
+
+At first, install logstrut with following command.
+
+```bash
+get github.com/m-mizutani/logstruct
+```
+
+```bash
+$ logstruct /var/log/auth.log
+
+```
+

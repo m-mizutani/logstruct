@@ -1,6 +1,10 @@
 package logstruct
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/sirupsen/logrus"
+)
 
 // Format has log data structure information
 type Format struct {
@@ -37,6 +41,15 @@ func NewFormat(baseLog *Log) *Format {
 // Match returns matching ratio of a log and the format
 func (x *Format) Match(log *Log) float64 {
 	matched := 0
+
+	if len(x.BaseLog.Tokens) != len(log.Tokens) || len(x.BaseLog.Tokens) != len(x.Blocks) {
+		logrus.WithFields(logrus.Fields{
+			"x.BaseLog.Tokens": len(x.BaseLog.Tokens),
+			"log.Tokens":       len(log.Tokens),
+			"x.Blockes":        len(x.Blocks),
+		}).Fatal("Length mismatch")
+	}
+
 	for idx, token := range log.Tokens {
 		if token.Data == x.Blocks[idx].Data {
 			matched++
@@ -44,6 +57,29 @@ func (x *Format) Match(log *Log) float64 {
 	}
 
 	return float64(matched) / float64(len(x.BaseLog.Tokens))
+}
+
+func (x *Format) Merge(log *Log) {
+	before := x.String()
+	changed := false
+	for idx, token := range log.Tokens {
+		if token.Data != x.Blocks[idx].Data && !x.Blocks[idx].IsParam {
+			logrus.WithFields(logrus.Fields{
+				"t1": x.Blocks[idx].Data,
+				"t2": token.Data,
+			}).Debug("Changed token")
+			x.Blocks[idx].IsParam = true
+			changed = true
+		}
+	}
+
+	if changed {
+		logrus.WithFields(logrus.Fields{
+			"base":   x.BaseLog.Text,
+			"before": before,
+			"after":  x.String(),
+		}).Debug("Changed")
+	}
 }
 
 func (x *Format) String() string {
@@ -54,3 +90,8 @@ func (x *Format) String() string {
 
 	return strings.Join(arr, "")
 }
+
+/*
+func (x *Format) ColoredString() string {
+}
+*/

@@ -12,15 +12,6 @@ import (
 	"github.com/urfave/cli"
 )
 
-type options struct {
-	// MaxLen uint   `long:"maxlen" description:"Max length of log message"`
-	// Output      string  `short:"o" long:"output" description:"Output file, '-' means stdout" default:"-"`
-	Threshold  float64 `short:"t" long:"threshold" default:"0.7"`
-	ImportFile string  `short:"i" long:"import"`
-	ExportFile string  `short:"e" long:"export"`
-	Dump       bool    `shosrt:"d" long:"dump-format"`
-}
-
 func readFile(m *logstruct.Model, fpath string) error {
 	fd, err := os.Open(fpath)
 	if err != nil {
@@ -42,6 +33,8 @@ func readFile(m *logstruct.Model, fpath string) error {
 type logstructOpt struct {
 	modelInput  string
 	modelOutput string
+	verbose     bool
+	threshold   float64
 	files       []string
 }
 
@@ -51,10 +44,24 @@ func main() {
 	app.Usage = "Automatci log format estimator"
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
-			Name:  "input, i",
-			Usage: "Input model",
+			Name:  "import, i",
+			Usage: "A file imported model",
+		},
+		cli.StringFlag{
+			Name:  "export, e",
+			Usage: "A file exported model",
+		},
+		cli.StringFlag{
+			Name:  "log-level, l",
+			Usage: "Set log level (warn, info, debug)",
+			Value: "warn",
+		},
+		cli.Float64Flag{
+			Name:  "threshold, t",
+			Usage: "Threshold to create a new format cluster",
 		},
 	}
+
 	app.Action = func(c *cli.Context) error {
 		args := []string{}
 		for i := 0; i < c.NArg(); i++ {
@@ -65,6 +72,18 @@ func main() {
 			modelInput:  c.String("i"),
 			modelOutput: c.String("e"),
 			files:       args,
+			threshold:   c.Float64("t"),
+		}
+
+		switch c.String("l") {
+		case "warn":
+			log.SetLevel(log.WarnLevel)
+		case "info":
+			log.SetLevel(log.InfoLevel)
+		case "debug":
+			log.SetLevel(log.DebugLevel)
+		default:
+			log.WithField("given log level", c.String("l")).Fatal("Invalid log level")
 		}
 
 		return logstructMain(opts)
@@ -78,6 +97,10 @@ func main() {
 }
 
 func logstructMain(opts logstructOpt) error {
+	if opts.verbose {
+		log.SetLevel(log.DebugLevel)
+	}
+
 	m := logstruct.NewModel()
 
 	if opts.modelInput != "" {
@@ -96,6 +119,11 @@ func logstructMain(opts logstructOpt) error {
 		}()
 	}
 
+	if opts.threshold > 0 {
+		m.Threshold = opts.threshold
+	}
+
+	log.WithField("threshold", m.Threshold).Info("Model Parameters")
 	for _, arg := range opts.files {
 		err := readFile(m, arg)
 		if err != nil {

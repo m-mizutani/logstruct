@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"os"
+	"sort"
 
 	"github.com/pkg/errors"
 )
@@ -34,8 +35,9 @@ func (x *Model) InputLog(msg string) (matchedForamt *Format, newFormat bool) {
 
 	for _, format := range x.FormatMap[length] {
 		ratio := format.Match(log)
-		if ratio > maxRatio {
+		if ratio > maxRatio && ratio > x.Threshold {
 			matchedForamt = format
+			maxRatio = ratio
 		}
 	}
 
@@ -46,6 +48,8 @@ func (x *Model) InputLog(msg string) (matchedForamt *Format, newFormat bool) {
 			x.FormatMap[length] = make([]*Format, 0)
 		}
 		x.FormatMap[length] = append(x.FormatMap[length], matchedForamt)
+	} else {
+		matchedForamt.Merge(log)
 	}
 
 	return
@@ -123,9 +127,22 @@ func (x *Model) Load(fpath string) (err error) {
 
 // Formats returns all format of the model
 func (x *Model) Formats() []*Format {
+	indexList := make([]int, len(x.FormatMap))
+
+	i := 0
+	for idx := range x.FormatMap {
+		indexList[i] = idx
+		i++
+	}
+
+	sort.Slice(indexList, func(i, j int) bool {
+		return indexList[i] < indexList[j]
+	})
+
 	arr := []*Format{}
-	for _, formats := range x.FormatMap {
-		arr = append(arr, formats...)
+	// for idx, formats := range x.FormatMap {
+	for _, idx := range indexList {
+		arr = append(arr, x.FormatMap[idx]...)
 	}
 	return arr
 }
