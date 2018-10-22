@@ -3,12 +3,13 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"log"
 	"os"
 
-	flags "github.com/jessevdk/go-flags"
+	log "github.com/sirupsen/logrus"
+
 	logstruct "github.com/m-mizutani/logstruct/lib"
 	"github.com/pkg/errors"
+	"github.com/urfave/cli"
 )
 
 type options struct {
@@ -31,49 +32,80 @@ func readFile(m *logstruct.Model, fpath string) error {
 	for scanner.Scan() {
 		format, isNew := m.InputLog(scanner.Text())
 		if isNew {
-			fmt.Printf("New: %s\n", format)
+			log.WithField("log", format.String()).Info("New Format")
 		}
 	}
 
 	return nil
 }
 
-func main() {
-	var opts options
+type logstructOpt struct {
+	modelInput  string
+	modelOutput string
+	files       []string
+}
 
-	args, ParseErr := flags.ParseArgs(&opts, os.Args)
-	if ParseErr != nil {
-		os.Exit(1)
+func main() {
+	app := cli.NewApp()
+	app.Name = "logstruct"
+	app.Usage = "Automatci log format estimator"
+	app.Flags = []cli.Flag{
+		cli.StringFlag{
+			Name:  "input, i",
+			Usage: "Input model",
+		},
+	}
+	app.Action = func(c *cli.Context) error {
+		args := []string{}
+		for i := 0; i < c.NArg(); i++ {
+			args = append(args, c.Args().Get(i))
+		}
+
+		opts := logstructOpt{
+			modelInput:  c.String("i"),
+			modelOutput: c.String("e"),
+			files:       args,
+		}
+
+		return logstructMain(opts)
 	}
 
+	err := app.Run(os.Args)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+}
+
+func logstructMain(opts logstructOpt) error {
 	m := logstruct.NewModel()
 
-	if opts.ImportFile != "" {
-		err := m.Load(opts.ImportFile)
+	if opts.modelInput != "" {
+		err := m.Load(opts.modelInput)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 	}
 
-	if opts.ExportFile != "" {
+	if opts.modelOutput != "" {
 		defer func() {
-			err := m.Save(opts.ExportFile)
+			err := m.Save(opts.modelOutput)
 			if err != nil {
 				log.Fatal(err)
 			}
 		}()
 	}
 
-	for _, arg := range args[1:] {
+	for _, arg := range opts.files {
 		err := readFile(m, arg)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 	}
 
-	if opts.Dump {
-		for idx, format := range m.Formats() {
-			fmt.Println(idx, ":", format)
-		}
+	for idx, format := range m.Formats() {
+		fmt.Println(idx, ":", format)
 	}
+
+	return nil
 }
