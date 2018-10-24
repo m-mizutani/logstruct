@@ -54,7 +54,7 @@ func main() {
 		},
 		cli.StringFlag{
 			Name:  "log-level, l",
-			Usage: "Set log level (warn, info, debug)",
+			Usage: "Set log level (error, warn, info or debug)",
 			Value: "warn",
 		},
 		cli.Float64Flag{
@@ -82,6 +82,8 @@ func main() {
 		}
 
 		switch c.String("l") {
+		case "error":
+			log.SetLevel(log.ErrorLevel)
 		case "warn":
 			log.SetLevel(log.WarnLevel)
 		case "info":
