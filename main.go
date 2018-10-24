@@ -36,6 +36,7 @@ type logstructOpt struct {
 	verbose     bool
 	threshold   float64
 	files       []string
+	quiet       bool
 }
 
 func main() {
@@ -60,6 +61,10 @@ func main() {
 			Name:  "threshold, t",
 			Usage: "Threshold to create a new format cluster",
 		},
+		cli.BoolFlag{
+			Name:  "quiet, q",
+			Usage: "disable output formats at last",
+		},
 	}
 
 	app.Action = func(c *cli.Context) error {
@@ -73,6 +78,7 @@ func main() {
 			modelOutput: c.String("e"),
 			files:       args,
 			threshold:   c.Float64("t"),
+			quiet:       c.Bool("q"),
 		}
 
 		switch c.String("l") {
@@ -131,8 +137,10 @@ func logstructMain(opts logstructOpt) error {
 		}
 	}
 
-	for idx, format := range m.Formats() {
-		fmt.Println(idx, ":", format)
+	if !opts.quiet {
+		for idx, format := range m.Formats() {
+			fmt.Println(idx, ":", format)
+		}
 	}
 
 	return nil
